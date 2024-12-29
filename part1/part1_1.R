@@ -3,6 +3,10 @@
 # for the years of 2019, 2020, 2021, 2022, 2023, and 2024.
 
 file_path <- "Data/"
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(plotly)
 
 # Get list of CSV files using relative path
 file_list <-
@@ -25,20 +29,78 @@ null_values <- sapply(data_frames, function(df) sum(is.na(df)))
 # Print the number of null values in each dataframe
 print(null_values)
 
-# Sum the number of rows in all data frames
-total_rows <- sum(sapply(data_frames, nrow))
+# Count the number of occurrences of each fuel type in each dataframe
+vehicle_counts_state <- lapply(data_frames, function(df) table(df$state))
 
-print(total_rows)
+# Print the counts of each fuel type for each dataframe
+print(vehicle_counts_state)
 
-# Get the number of rows for each dataframe
-num_rows <- sapply(data_frames, nrow)
+# Extract years from file names
+years <- as.numeric(gsub("cars_|\\.csv", "", basename(file_list)))
 
-# Create a bar plot of the number of rows in each CSV file
-barplot(num_rows,
-  main = "Number of Registered Vehicle Each Year",
-  xlab = "Year",
-  ylab = "Number of Registered Vehicles",
-  names.arg = names(data_frames),
-  las = 2,
-  col = "lightblue"
-)
+# Combine data frames into one with an additional column for the year
+combined_data <- do.call(rbind, lapply(seq_along(data_frames), function(i) {
+  df <- data_frames[[i]]
+  df$year <- years[i]
+  return(df)
+}))
+
+# Aggregate data to get the count of each fuel type per year
+vehicle_counts_per_year <- combined_data %>%
+  group_by(year, state) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+# Plot the combined graph
+ggplot(
+  vehicle_counts_per_year,
+  aes(x = year, y = count, color = state, group = state)
+) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Number of Registered Vehicles by State Over Time",
+    x = "Year",
+    y = "Number of Vehicles",
+    color = "State"
+  ) +
+  theme_minimal() +
+  scale_color_manual(
+    values = c(brewer.pal(10, "Paired"), brewer.pal(8, "Dark2"))
+  )
+
+ggplot(
+  vehicle_counts_per_year,
+  aes(x = year, y = count, color = state, group = state)
+) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Number of Registered Vehicles by State Over Time",
+    x = "Year",
+    y = "Number of Vehicles",
+    color = "State"
+  ) +
+  theme_minimal() +
+  scale_color_manual(
+    values = c(brewer.pal(10, "Paired"), brewer.pal(8, "Dark2"))
+  ) +
+  facet_wrap(~state, scales = "free_y", ncol = 3)
+
+p <- ggplot(
+  vehicle_counts_per_year,
+  aes(x = state, y = count, fill = as.factor(year))
+) +
+  geom_bar(stat = "identity", position = "dodge") + # Grouped by year
+  labs(
+    title = "Number of Registered Vehicles by State (All Years)",
+    x = "State",
+    y = "Number of Vehicles",
+    fill = "Year"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Paired") +
+  facet_wrap(~state, scales = "free_y", ncol = 3)
+
+ggplotly(p)
