@@ -19,6 +19,12 @@ names(data_frames) <- basename(file_list)
 # Print the names of the dataframes
 print(names(data_frames))
 
+# Check for null values in all dataframes
+null_values <- sapply(data_frames, function(df) sum(is.na(df)))
+
+# Print the number of null values in each dataframe
+print(null_values)
+
 # Sum the number of rows in all data frames
 total_rows <- sum(sapply(data_frames, nrow))
 
