@@ -16,8 +16,8 @@ mco_periods <- data.frame(
     "2020-03-18",  # MCO 1.0
     "2020-05-04",  # CMCO
     "2020-06-10",  # RMCO
-    "2021-01-13",  # MCO 2.0
-    "2021-05-12"   # MCO 3.0
+    "2021-01-13",  # MCO by states
+    "2021-05-12"   # NRP
   )),
   end_date = as.Date(c(
     "2020-05-03",
@@ -26,7 +26,7 @@ mco_periods <- data.frame(
     "2021-05-11",
     "2021-12-31"
   )),
-  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO 2.0", "MCO 3.0")
+  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO by states", "NRP")
 )
 
 # Prepare data for analysis
@@ -36,6 +36,7 @@ ridership_data <- df %>%
     year = year(date),
     month = floor_date(date, "month"),
     period = case_when(
+      # ~ returns the result of condition
       date < as.Date("2020-03-18") ~ "Pre-MCO",
       date >= as.Date("2022-01-01") ~ "Post-MCO",
       TRUE ~ "During-MCO"
@@ -47,11 +48,12 @@ monthly_avg <- ridership_data %>%
   group_by(month) %>%
   summarise(
     across(
-      starts_with("rail"),
-      list(
-        avg = ~mean(., na.rm = TRUE),
-        total = ~sum(., na.rm = TRUE)
-      )
+      c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"),
+      # ~mean(.) creates an anonymous function where:
+      # ~ (tilde) defines the anonymous function
+      # . (dot) represents the input column data
+      # na.rm ignore NA values
+      ~mean(., na.rm = TRUE)
     )
   )
 
@@ -59,11 +61,10 @@ monthly_avg <- ridership_data %>%
 long_data <- monthly_avg %>%
   pivot_longer(
     cols = -month,
-    names_to = c("line", "metric"),
-    names_pattern = "rail_(.*)_(.*)",
+    names_to = "line",
+    names_pattern = "rail_(.*)",
     values_to = "value"
-  ) %>%
-  filter(metric == "avg")  # Use averages for visualization
+  )
 
 # Create time series plot with MCO periods highlighted
 p1 <- ggplot(long_data, aes(x = month, y = value, color = line)) +
@@ -90,16 +91,13 @@ p1 <- ggplot(long_data, aes(x = month, y = value, color = line)) +
   ) +
   scale_y_continuous(labels = scales::comma)
 
-# Calculate year-over-year changes
+# Calculate year-over-year changes (simplified)
 yearly_summary <- ridership_data %>%
   group_by(year) %>%
   summarise(
     across(
-      starts_with("rail"),
-      list(
-        total = ~sum(., na.rm = TRUE),
-        avg = ~mean(., na.rm = TRUE)
-      )
+      c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"),
+      ~mean(., na.rm = TRUE)
     )
   )
 
@@ -107,11 +105,11 @@ yearly_summary <- ridership_data %>%
 yearly_long <- yearly_summary %>%
   pivot_longer(
     cols = -year,
-    names_to = c("line", "metric"),
-    names_pattern = "rail_(.*)_(.*)",
+    names_to = "line",
+    # regex to extract the line name from the column name
+    names_pattern = "rail_(.*)",
     values_to = "value"
-  ) %>%
-  filter(metric == "avg")
+  )
 
 p2 <- ggplot(yearly_long, aes(x = as.factor(year), y = value, fill = line)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -128,46 +126,20 @@ p2 <- ggplot(yearly_long, aes(x = as.factor(year), y = value, fill = line)) +
 baseline_comparison <- ridership_data %>%
   group_by(year) %>%
   summarise(
-    across(starts_with("rail"), ~mean(., na.rm = TRUE))
+    across(c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"), ~mean(., na.rm = TRUE))
   ) %>%
   mutate(
     across(
-      starts_with("rail"),
+      c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"),
       ~(. / first(.)) - 1,
       .names = "{.col}_pct_change"
     )
   )
 
-# Create heatmap of recovery patterns
-recovery_long <- baseline_comparison %>%
-  select(year, ends_with("pct_change")) %>%
-  pivot_longer(
-    cols = -year,
-    names_to = "line",
-    values_to = "pct_change"
-  )
-
-p3 <- ggplot(recovery_long, aes(x = as.factor(year), y = line, fill = pct_change)) +
-  geom_tile() +
-  scale_fill_gradient2(
-    low = "red",
-    mid = "white",
-    high = "green",
-    midpoint = 0,
-    labels = scales::percent
-  ) +
-  theme_minimal() +
-  labs(
-    title = "Recovery Pattern Relative to 2019 Baseline",
-    x = "Year",
-    y = "Rail Line",
-    fill = "% Change"
-  )
 
 # Display plots
 print(p1)
 print(p2)
-print(p3)
 
 # Print summary statistics
 print("Yearly Summary Statistics:")

@@ -9,6 +9,7 @@ df <- read.csv("Data/ridership_headline.csv")
 df$date <- as.Date(df$date)
 
 # Filter for 2023 data and get top/bottom 10 days for bus_rkl
+# select: select the columns to be used 
 bus_rkl_2023 <- df %>%
   filter(format(date, "%Y") == "2023") %>%
   arrange(desc(bus_rkl)) %>%
@@ -24,7 +25,7 @@ combined_results <- bind_rows(
   mutate(bottom_10, category = "Lowest Ridership")
 )
 
-# Create a plot
+# Create a plot (optional)
 ggplot(combined_results, aes(x = reorder(format(date, "%Y-%m-%d"), bus_rkl), 
                             y = bus_rkl, 
                             fill = category)) +

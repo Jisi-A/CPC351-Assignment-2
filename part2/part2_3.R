@@ -13,17 +13,24 @@ df$date <- as.Date(df$date)
 penang_bus_2022 <- df %>%
   filter(date >= as.Date("2022-01-01") & date <= as.Date("2022-02-28")) %>%
   mutate(
+    # wday() returns the day of the week as a number
+    # where 1 is Sunday, 7 is Saturday
+    # if it is 1 or 7, it is weekend else it is weekday
     day_type = ifelse(wday(date) %in% c(1,7), "Weekend", "Weekday"),
+    # floor_date() rounds the date to the start of the week
+    # so we can group by week
     week = floor_date(date, "week"),
+    # weekdays() returns the name of the day of the week
+    # eg Monday, Tuesday, etc
     day_name = weekdays(date)
   )
 
 # Calculate daily averages by day type
 daily_avg <- penang_bus_2022 %>%
+  # group by day type (weekend or weekday)
   group_by(day_type) %>%
   summarise(
     avg_ridership = mean(bus_rpn, na.rm = TRUE),
-    sd_ridership = sd(bus_rpn, na.rm = TRUE)
   )
 
 # Create boxplot to show distribution

@@ -53,3 +53,24 @@ ggplot(monthly_trips, aes(x = month, y = trips/1000000, fill = service)) +  # Co
   scale_x_discrete(
     breaks = function(x) x[seq(1, length(x), by = 3)]  # Show every 3rd month
   )
+
+  ggplot(monthly_trips, aes(x = service, y = trips/1000000, fill = service)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~month, scales = "free_y") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none",  # Remove legend as colors already indicate service
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    strip.text = element_text(size = 10)  # Month label size in facets
+  ) +
+  labs(
+    title = "Monthly Public Transport Ridership by Service Type",
+    x = "Transport Service",
+    y = "Number of Trips (Millions)"
+  ) +
+  scale_y_continuous(
+    labels = scales::comma_format(scale = 1)
+  )
