@@ -104,3 +104,24 @@ p <- ggplot(
   facet_wrap(~state, scales = "free_y", ncol = 3)
 
 ggplotly(p)
+
+vehicles_without_rakan_niaga <-
+  vehicle_counts_per_year %>% filter(state != "Rakan Niaga")
+head(vehicles_without_rakan_niaga)
+
+ggplot(
+  vehicles_without_rakan_niaga,
+  aes(x = year, y = count, color = state, group = state)
+) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Number of Registered Vehicles by State Over Time",
+    x = "Year",
+    y = "Number of Vehicles",
+    color = "State"
+  ) +
+  theme_minimal() +
+  scale_color_manual(
+    values = c(brewer.pal(10, "Paired"), brewer.pal(8, "Dark2"))
+  )
