@@ -69,6 +69,7 @@ ggplot(
     values = c(brewer.pal(10, "Paired"), brewer.pal(8, "Dark2"))
   )
 
+# Plot separated line graphs
 ggplot(
   vehicle_counts_per_year,
   aes(x = year, y = count, color = state, group = state)
@@ -87,6 +88,7 @@ ggplot(
   ) +
   facet_wrap(~state, scales = "free_y", ncol = 3)
 
+# Plot bar chart
 p <- ggplot(
   vehicle_counts_per_year,
   aes(x = state, y = count, fill = as.factor(year))
@@ -105,10 +107,12 @@ p <- ggplot(
 
 ggplotly(p)
 
+# Filter out Rakan Niaga data
 vehicles_without_rakan_niaga <-
   vehicle_counts_per_year %>% filter(state != "Rakan Niaga")
 head(vehicles_without_rakan_niaga)
 
+# Plot line graph without Rakan Niaga
 ggplot(
   vehicles_without_rakan_niaga,
   aes(x = year, y = count, color = state, group = state)

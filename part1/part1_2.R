@@ -51,7 +51,7 @@ top_5_counts <- lapply(seq_along(sorted_counts), function(i) {
 # Combine All DataFrames into One
 combined_df <- bind_rows(top_5_counts)
 
-# Plot with ggplot2
+# Plot bar chart
 ggplot(
   combined_df,
   aes(x = reorder(maker, -state), y = state, fill = dataset)

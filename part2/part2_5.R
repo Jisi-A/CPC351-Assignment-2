@@ -13,20 +13,22 @@ df$date <- as.Date(df$date)
 # Define MCO periods
 mco_periods <- data.frame(
   start_date = as.Date(c(
-    "2020-03-18",  # MCO 1.0
-    "2020-05-04",  # CMCO
-    "2020-06-10",  # RMCO
-    "2021-01-13",  # MCO by states
-    "2021-05-12"   # NRP
+    "2020-03-18", # MCO 1.0
+    "2020-05-04", # CMCO
+    "2020-06-10", # RMCO
+    "2021-01-13", # MCO by states
+    "2021-06-01", # Total Lock Down
+    "2021-06-15" # NRP
   )),
   end_date = as.Date(c(
     "2020-05-03",
     "2020-06-09",
-    "2020-12-31",
-    "2021-05-11",
+    "2021-03-31",
+    "2021-05-31",
+    "2021-06-28",
     "2021-12-31"
   )),
-  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO by states", "NRP")
+  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO by states", "Total Lock Down", "NRP")
 )
 
 # Prepare data for analysis
@@ -53,7 +55,7 @@ monthly_avg <- ridership_data %>%
       # ~ (tilde) defines the anonymous function
       # . (dot) represents the input column data
       # na.rm ignore NA values
-      ~mean(., na.rm = TRUE)
+      ~ mean(., na.rm = TRUE)
     )
   )
 
@@ -71,11 +73,15 @@ p1 <- ggplot(long_data, aes(x = month, y = value, color = line)) +
   geom_line() +
   geom_point(size = 1) +
   # Add MCO period rectangles
-  geom_rect(data = mco_periods,
-            aes(xmin = start_date, xmax = end_date,
-                ymin = -Inf, ymax = Inf, fill = mco_phase),
-            alpha = 0.2,
-            inherit.aes = FALSE) +
+  geom_rect(
+    data = mco_periods,
+    aes(
+      xmin = start_date, xmax = end_date,
+      ymin = -Inf, ymax = Inf, fill = mco_phase
+    ),
+    alpha = 0.2,
+    inherit.aes = FALSE
+  ) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
@@ -97,7 +103,7 @@ yearly_summary <- ridership_data %>%
   summarise(
     across(
       c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"),
-      ~mean(., na.rm = TRUE)
+      ~ mean(., na.rm = TRUE)
     )
   )
 
@@ -126,12 +132,12 @@ p2 <- ggplot(yearly_long, aes(x = as.factor(year), y = value, fill = line)) +
 baseline_comparison <- ridership_data %>%
   group_by(year) %>%
   summarise(
-    across(c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"), ~mean(., na.rm = TRUE))
+    across(c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"), ~ mean(., na.rm = TRUE))
   ) %>%
   mutate(
     across(
       c("rail_lrt_ampang", "rail_lrt_kj", "rail_monorail"),
-      ~(. / first(.)) - 1,
+      ~ (. / first(.)) - 1,
       .names = "{.col}_pct_change"
     )
   )

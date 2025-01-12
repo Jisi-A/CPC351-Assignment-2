@@ -28,16 +28,18 @@ mco_periods <- data.frame(
     "2020-05-04",  # CMCO
     "2020-06-10",  # RMCO
     "2021-01-13",  # MCO by states
-    "2021-05-12"   # NRP
+    "2021-06-01",  # Total Lock Down
+    "2021-06-15"   # NRP
   )),
   end_date = as.Date(c(
     "2020-05-03",
     "2020-06-09",
-    "2020-12-31",
-    "2021-05-11",
+    "2021-03-31",
+    "2021-05-31",
+    "2021-06-28",
     "2021-12-31"
   )),
-  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO by states", "NRP")
+  mco_phase = c("MCO 1.0", "CMCO", "RMCO", "MCO by states", "Total Lock Down", "NRP")
 )
 
 # Prepare yearly data
@@ -144,10 +146,56 @@ p3 <- ggplot(type_analysis, aes(x = date, y = count, color = type)) +
   ) +
   scale_y_continuous(labels = scales::comma)
 
+# Prepare monthly data
+monthly_totals <- combined_data %>%
+  mutate(
+    month = format(as.Date(date_reg), "%m"),
+    date = as.Date(paste0(year, "-", month, "-01"))
+  ) %>%
+  group_by(date) %>%
+  summarise(
+    total_vehicles = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    period = case_when(
+      date < as.Date("2020-01-01") ~ "Pre-COVID",
+      date > as.Date("2021-12-31") ~ "Post-COVID",
+      TRUE ~ "During-COVID"
+    )
+  )
+
+# Create detailed time series plot with MCO periods highlighted
+p4 <- ggplot(monthly_totals, aes(x = date, y = total_vehicles)) +
+  # Add MCO period rectangles
+  geom_rect(data = mco_periods,
+            aes(xmin = start_date, xmax = end_date,
+                ymin = -Inf, ymax = Inf, fill = mco_phase),
+            alpha = 0.2,
+            inherit.aes = FALSE) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2, aes(color = period)) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "Monthly Registered Vehicles (2019-2021)",
+    subtitle = "Impact of COVID-19 MCO Periods",
+    x = "Date",
+    y = "Number of Registered Vehicles",
+    color = "Period",
+    fill = "MCO Phase"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y")
+
 # Display plots
 print(p1)
 print(p2)
 print(p3)
+print(p4)
 
 # Print summary statistics
 cat("\nYearly Summary Statistics:\n")

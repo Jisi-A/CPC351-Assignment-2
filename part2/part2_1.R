@@ -7,6 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(lubridate)
+library(RColorBrewer)
 
 # Read the data
 df <- read.csv("Data/ridership_headline.csv")
@@ -26,17 +27,20 @@ df$month <- format(df$date, "%Y-%m")
 monthly_trips <- df %>%
   group_by(month) %>%
   summarise(across(starts_with(c("bus_", "rail_")), sum, na.rm = TRUE)) %>%
-  pivot_longer(cols = -month, 
-              names_to = "service", 
-              values_to = "trips")
+  pivot_longer(
+    cols = -month,
+    names_to = "service",
+    values_to = "trips"
+  )
 
-ggplot(monthly_trips, aes(x = month, y = trips/1000000, fill = service)) +  # Convert to millions
+# Plot stacked bar chart
+ggplot(monthly_trips, aes(x = month, y = trips / 1000000, fill = service)) + # Convert to millions
   geom_bar(stat = "identity") +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),  # Reduced angle to 45
+    axis.text.x = element_text(angle = 45, hjust = 1), # Reduced angle to 45
     legend.position = "right",
-    panel.grid.minor = element_blank(),  # Remove minor gridlines
+    panel.grid.minor = element_blank(), # Remove minor gridlines
     plot.title = element_text(size = 14, face = "bold"),
     axis.title = element_text(size = 12)
   ) +
@@ -51,20 +55,24 @@ ggplot(monthly_trips, aes(x = month, y = trips/1000000, fill = service)) +  # Co
     labels = scales::comma_format(scale = 1)
   ) +
   scale_x_discrete(
-    breaks = function(x) x[seq(1, length(x), by = 3)]  # Show every 3rd month
+    breaks = function(x) x[seq(1, length(x), by = 3)] # Show every 3rd month
+  ) +
+  scale_fill_manual(
+    values = c(brewer.pal(9, "Set1"), brewer.pal(5, "Set3"))
   )
 
-  ggplot(monthly_trips, aes(x = service, y = trips/1000000, fill = service)) +
+# Plot bar charts by month
+ggplot(monthly_trips, aes(x = service, y = trips / 1000000, fill = service)) +
   geom_bar(stat = "identity") +
   facet_wrap(~month, scales = "free_y") +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.position = "none",  # Remove legend as colors already indicate service
+    legend.position = "none", # Remove legend as colors already indicate service
     panel.grid.minor = element_blank(),
     plot.title = element_text(size = 14, face = "bold"),
     axis.title = element_text(size = 12),
-    strip.text = element_text(size = 10)  # Month label size in facets
+    strip.text = element_text(size = 10) # Month label size in facets
   ) +
   labs(
     title = "Monthly Public Transport Ridership by Service Type",
@@ -73,4 +81,36 @@ ggplot(monthly_trips, aes(x = month, y = trips/1000000, fill = service)) +  # Co
   ) +
   scale_y_continuous(
     labels = scales::comma_format(scale = 1)
+  )
+
+# Convert month to proper date format
+monthly_trips$month <- as.Date(paste0(monthly_trips$month, "-01"))
+
+# Plot area graph
+ggplot(monthly_trips, aes(x = month, y = trips / 1000000, fill = service)) +
+  geom_area(position = "stack") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right",
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  ) +
+  labs(
+    title = "Monthly Public Transport Ridership",
+    subtitle = "Aggregated trips by service type",
+    x = "Month",
+    y = "Number of Trips (Millions)",
+    fill = "Transport Service"
+  ) +
+  scale_y_continuous(
+    labels = scales::comma_format(scale = 1)
+  ) +
+  scale_x_date( # Changed from scale_x_discrete to scale_x_date
+    date_breaks = "3 months",
+    date_labels = "%Y-%m"
+  ) +
+  scale_fill_manual(
+    values = c(brewer.pal(9, "Set1"), brewer.pal(5, "Set3"))
   )
